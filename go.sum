@@ -1,0 +1,4 @@
+github.com/feed-relay/contracts v0.3.0 h1:LdHNV22vedEs4HRRK1HRIV0+XKZjg40nUvVynHoQia8=
+github.com/feed-relay/contracts v0.3.0/go.mod h1:xZUy83ym4Jkck3XzHUbm6CWIuPFaZgrcN1dqK29OKD8=
+github.com/feed-relay/rsscast v0.2.0 h1:u1glocfqbyV6oZspZw+NJlQFDbM+KfXxvTgSqByLvUU=
+github.com/feed-relay/rsscast v0.2.0/go.mod h1:rUWxMUaSDBdM0P7MBoKxdCtMs/tEIZUbb6O4tzma1+k=
