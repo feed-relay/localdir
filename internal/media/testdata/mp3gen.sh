@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+set -e
+
 ffmpeg \
   -f lavfi \
   -i anullsrc=r=44100:cl=mono \
