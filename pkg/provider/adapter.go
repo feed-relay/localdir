@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -118,11 +119,17 @@ func (a *adapter) Feed(_ context.Context, f contracts.Feed) (*rsscast.Feed, erro
 			item.WithDescription(itemDescription)
 		}
 
-		// TODO itemImage
-		//itemImage := ""
-		//if itemImage != "" {
-		//	item.WithItunesImage(itemImage)
-		//}
+		var itemImage string
+		pic := audio.Metadata.Picture()
+		if pic != nil {
+			itemImage, _ = picture(feed.Dir(), strings.TrimSuffix(audio.Name, filepath.Ext(audio.Name)), pic)
+			if itemImage != "" {
+				itemImage, _ = url.JoinPath(baseURL, itemImage)
+			}
+		}
+		if itemImage != "" {
+			item.WithItunesImage(itemImage)
+		}
 
 		rssFeed.AddItem(item)
 	}
