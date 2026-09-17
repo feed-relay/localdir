@@ -1,0 +1,26 @@
+logger:
+  level: debug
+  format: json
+  output: both
+  add_source: false
+  file_path: var/log/log.log
+  rotation:
+    max_size_mb: 100
+    max_backups: 3
+    max_age_days: 28
+    compress: true
+  fields:
+    service: fr-localdir
+
+itunes_owner_name: "Feed Relay Localdir"
+itunes_owner_email: "feed-relay@example.com"
+generator: "Feed Relay Local Files v0.1.0 (github.com/feed-relay/localdir)"
+
+feeds:
+  - dir: "var/data"
+    slug: feed # var/data/localdir-feed.xml
+    title: "My Local Podcast"
+    description: "Podcast built from local files"
+    image: "cover.png" # var/data/cover.png
+    link: "http://192.168.1.2:8000" # http://192.168.1.2:8000/localdir-feed.xml
+    limit: 2
