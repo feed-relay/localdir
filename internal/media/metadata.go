@@ -31,14 +31,5 @@ func (*tagReader) Metadata(path string) (tag.Metadata, error) {
 		}
 	}(f)
 
-	md, err := tag.ReadFrom(f)
-	if err != nil {
-		return nil, err
-	}
-
-	rawdata := md.Raw()
-	slog.Debug("metadata", slog.Any("rawdata", rawdata))
-
-	return md, err
-	//return tag.ReadFrom(f)
+	return tag.ReadFrom(f)
 }
