@@ -6,14 +6,9 @@ type AppConfig struct {
 	Logger lgr.Config `yaml:"logger"`
 	Feeds  []Feed     `yaml:"feeds"`
 
-	RawOutputDir        string `yaml:"output_dir"`
 	RawGenerator        string `yaml:"generator"`
 	RawItunesOwnerName  string `yaml:"itunes_owner_name"`
 	RawItunesOwnerEmail string `yaml:"itunes_owner_email"`
-}
-
-func (c *AppConfig) OutputDir() string {
-	return c.RawOutputDir
 }
 
 func (c *AppConfig) Generator() string {
