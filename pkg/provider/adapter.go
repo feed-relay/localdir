@@ -26,12 +26,6 @@ type adapter struct {
 	config Config
 }
 
-func NewAdapter(config Config) Adapter {
-	return &adapter{
-		config: config,
-	}
-}
-
 func (a *adapter) Feed(ctx context.Context, feed Feed) (*rsscast.Feed, error) {
 	baseURL := feed.Link()
 	fallbackCaption := "Feed Relay Localdir"
@@ -102,7 +96,7 @@ func (a *adapter) Feed(ctx context.Context, feed Feed) (*rsscast.Feed, error) {
 		item := rsscast.NewItem(itemData).
 			WithPubDate(audio.ModTime).
 			WithDescription(itemData.Title).
-			WithItunesDuration(audio.Duration).
+			WithItunesDuration(int64(audio.Duration.Seconds())).
 			WithLink(enclosureURL).
 			WithItunesExplicit(rsscast.ExplicitFalse).
 			WithItunesTitle(itemData.Title).
