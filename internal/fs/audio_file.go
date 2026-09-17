@@ -13,13 +13,17 @@ const (
 	Mp3 AudioType = "mp3"
 )
 
-type AudioFile struct {
+type AudioFileBase struct {
 	path      string
 	modTime   time.Time
 	length    int64
 	audioType AudioType
-	metadata  Metadata
-	duration  int64
+}
+
+type AudioFile struct {
+	AudioFileBase
+	metadata Metadata
+	duration int64
 }
 
 func (f *AudioFile) Path() string {
