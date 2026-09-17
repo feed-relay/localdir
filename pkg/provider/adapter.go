@@ -2,17 +2,22 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/feed-relay/contracts"
 	"github.com/feed-relay/rsscast"
 
 	"github.com/feed-relay/localdir/internal/fs"
 )
 
+//go:generate moq --out ./mocks/adapter_mock.go --pkg mocks --skip-ensure --with-resets -fmt goimports . Adapter
+//go:generate moq --out ./mocks/config_mock.go --pkg mocks --skip-ensure --with-resets -fmt goimports . Config
+
 type Adapter interface {
-	Feed(ctx context.Context, feed Feed) (*rsscast.Feed, error)
+	Feed(ctx context.Context, feed contracts.Feed) (*rsscast.Feed, error)
 }
 
 // Config supplies feed-level metadata.
@@ -26,14 +31,15 @@ type adapter struct {
 	config Config
 }
 
-func (a *adapter) Feed(ctx context.Context, feed Feed) (*rsscast.Feed, error) {
+func (a *adapter) Feed(_ context.Context, f contracts.Feed) (*rsscast.Feed, error) {
+	feed, ok := f.(Feed)
+	if !ok {
+		return nil, fmt.Errorf("unsupported feed type: %T", f)
+	}
 	baseURL := feed.Link()
 	fallbackCaption := "Feed Relay Localdir"
 
-	cover := ""
-	if feed.Image() != "" {
-		cover, _ = url.JoinPath(baseURL, feed.Image())
-	}
+	cover, _ := url.JoinPath(baseURL, feed.Image())
 
 	title := feed.Title()
 	if title == "" {
@@ -68,6 +74,10 @@ func (a *adapter) Feed(ctx context.Context, feed Feed) (*rsscast.Feed, error) {
 
 	audios := feed.AudioFiles()
 	for _, audio := range audios {
+		enclosureLength := audio.Length
+		if enclosureLength <= 0 {
+			enclosureLength = 1_000_000 /// 1Mb
+		}
 		enclosureType, _ := enclosureTypeByAudioType(audio.AudioType)
 		enclosureURL, _ := url.JoinPath(baseURL, audio.Name)
 
@@ -90,7 +100,7 @@ func (a *adapter) Feed(ctx context.Context, feed Feed) (*rsscast.Feed, error) {
 			Enclosure: rsscast.Enclosure{
 				URL:    enclosureURL,
 				Type:   enclosureType,
-				Length: audio.Length,
+				Length: enclosureLength,
 			},
 		}
 		item := rsscast.NewItem(itemData).

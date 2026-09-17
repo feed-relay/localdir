@@ -13,6 +13,8 @@ import (
 	"github.com/feed-relay/localdir/internal/fs"
 )
 
+//go:generate moq --out ./mocks/feed_mock.go --pkg mocks --skip-ensure --with-resets -fmt goimports . Feed
+
 const Platform = "localdir"
 
 const feedWorkers = 8
