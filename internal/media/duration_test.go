@@ -16,7 +16,11 @@ import (
 
 func TestDurationReader_Duration(t *testing.T) {
 	t.Run("returns error when file does not exist", func(t *testing.T) {
-		runner := &mocks.CommandRunnerMock{}
+		runner := &mocks.CommandRunnerMock{
+			RunFunc: func(_ context.Context, _ string, _ ...string) ([]byte, error) {
+				return nil, errors.New("file does not exist")
+			},
+		}
 		reader := NewFfprobeDurationReader(runner)
 
 		_, err := reader.Duration(t.Context(), filepath.Join(t.TempDir(), "missing.mp3"))
@@ -30,7 +34,11 @@ func TestDurationReader_Duration(t *testing.T) {
 		err := os.WriteFile(path, []byte("not an mp3 file"), 0o600)
 		require.NoError(t, err)
 
-		runner := &mocks.CommandRunnerMock{}
+		runner := &mocks.CommandRunnerMock{
+			RunFunc: func(_ context.Context, _ string, _ ...string) ([]byte, error) {
+				return nil, errors.New("invalid mp3 file")
+			},
+		}
 		reader := NewFfprobeDurationReader(runner)
 
 		_, err = reader.Duration(t.Context(), path)

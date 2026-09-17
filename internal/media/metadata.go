@@ -10,7 +10,7 @@ import (
 //go:generate moq --out ./mocks/metadatareader_mock.go --pkg mocks --skip-ensure --with-resets -fmt goimports . MetadataReader
 
 type MetadataReader interface {
-	Read(path string) (AudioMetadata, error)
+	Metadata(path string) (tag.Metadata, error)
 }
 
 type tagReader struct{}
@@ -19,7 +19,7 @@ func NewMetadataReader() MetadataReader {
 	return &tagReader{}
 }
 
-func (*tagReader) Read(path string) (AudioMetadata, error) {
+func (*tagReader) Metadata(path string) (tag.Metadata, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -31,5 +31,14 @@ func (*tagReader) Read(path string) (AudioMetadata, error) {
 		}
 	}(f)
 
-	return tag.ReadFrom(f)
+	md, err := tag.ReadFrom(f)
+	if err != nil {
+		return nil, err
+	}
+
+	rawdata := md.Raw()
+	slog.Debug("metadata", slog.Any("rawdata", rawdata))
+
+	return md, err
+	//return tag.ReadFrom(f)
 }

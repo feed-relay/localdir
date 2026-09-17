@@ -6,7 +6,7 @@ package mocks
 import (
 	"sync"
 
-	"github.com/feed-relay/localdir/internal/media"
+	"github.com/dhowden/tag"
 )
 
 // MetadataReaderMock is a mock implementation of media.MetadataReader.
@@ -15,8 +15,8 @@ import (
 //
 //		// make and configure a mocked media.MetadataReader
 //		mockedMetadataReader := &MetadataReaderMock{
-//			ReadFunc: func(path string) (media.AudioMetadata, error) {
-//				panic("mock out the Read method")
+//			MetadataFunc: func(path string) (tag.Metadata, error) {
+//				panic("mock out the Metadata method")
 //			},
 //		}
 //
@@ -25,62 +25,62 @@ import (
 //
 //	}
 type MetadataReaderMock struct {
-	// ReadFunc mocks the Read method.
-	ReadFunc func(path string) (media.AudioMetadata, error)
+	// MetadataFunc mocks the Metadata method.
+	MetadataFunc func(path string) (tag.Metadata, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// Read holds details about calls to the Read method.
-		Read []struct {
+		// Metadata holds details about calls to the Metadata method.
+		Metadata []struct {
 			// Path is the path argument value.
 			Path string
 		}
 	}
-	lockRead sync.RWMutex
+	lockMetadata sync.RWMutex
 }
 
-// Read calls ReadFunc.
-func (mock *MetadataReaderMock) Read(path string) (media.AudioMetadata, error) {
-	if mock.ReadFunc == nil {
-		panic("MetadataReaderMock.ReadFunc: method is nil but MetadataReader.Read was just called")
+// Metadata calls MetadataFunc.
+func (mock *MetadataReaderMock) Metadata(path string) (tag.Metadata, error) {
+	if mock.MetadataFunc == nil {
+		panic("MetadataReaderMock.MetadataFunc: method is nil but MetadataReader.Metadata was just called")
 	}
 	callInfo := struct {
 		Path string
 	}{
 		Path: path,
 	}
-	mock.lockRead.Lock()
-	mock.calls.Read = append(mock.calls.Read, callInfo)
-	mock.lockRead.Unlock()
-	return mock.ReadFunc(path)
+	mock.lockMetadata.Lock()
+	mock.calls.Metadata = append(mock.calls.Metadata, callInfo)
+	mock.lockMetadata.Unlock()
+	return mock.MetadataFunc(path)
 }
 
-// ReadCalls gets all the calls that were made to Read.
+// MetadataCalls gets all the calls that were made to Metadata.
 // Check the length with:
 //
-//	len(mockedMetadataReader.ReadCalls())
-func (mock *MetadataReaderMock) ReadCalls() []struct {
+//	len(mockedMetadataReader.MetadataCalls())
+func (mock *MetadataReaderMock) MetadataCalls() []struct {
 	Path string
 } {
 	var calls []struct {
 		Path string
 	}
-	mock.lockRead.RLock()
-	calls = mock.calls.Read
-	mock.lockRead.RUnlock()
+	mock.lockMetadata.RLock()
+	calls = mock.calls.Metadata
+	mock.lockMetadata.RUnlock()
 	return calls
 }
 
-// ResetReadCalls reset all the calls that were made to Read.
-func (mock *MetadataReaderMock) ResetReadCalls() {
-	mock.lockRead.Lock()
-	mock.calls.Read = nil
-	mock.lockRead.Unlock()
+// ResetMetadataCalls reset all the calls that were made to Metadata.
+func (mock *MetadataReaderMock) ResetMetadataCalls() {
+	mock.lockMetadata.Lock()
+	mock.calls.Metadata = nil
+	mock.lockMetadata.Unlock()
 }
 
 // ResetCalls reset all the calls that were made to all mocked methods.
 func (mock *MetadataReaderMock) ResetCalls() {
-	mock.lockRead.Lock()
-	mock.calls.Read = nil
-	mock.lockRead.Unlock()
+	mock.lockMetadata.Lock()
+	mock.calls.Metadata = nil
+	mock.lockMetadata.Unlock()
 }
