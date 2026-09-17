@@ -2,6 +2,7 @@ package fs
 
 import (
 	"cmp"
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -96,13 +97,13 @@ func (f *Finder) RecentAudioFiles(dir string, limit int) ([]AudioFile, error) {
 
 		// Probing happens only for the files that can still make the cut,
 		// instead of for every file in the directory.
-		metadata, err := f.metadataReader.Read(c.Path)
+		metadata, err := f.metadataReader.Metadata(c.Path)
 		if err != nil {
 			slog.Error("fs: read metadata", slog.String("path", c.Path), slog.Any("err", err))
 			continue
 		}
 
-		duration, err := f.durationReader.Read(c.Path)
+		duration, err := f.durationReader.Duration(context.Background(), c.Path)
 		if err != nil {
 			slog.Error("fs: read duration", slog.String("path", c.Path), slog.Any("err", err))
 			continue
@@ -110,10 +111,8 @@ func (f *Finder) RecentAudioFiles(dir string, limit int) ([]AudioFile, error) {
 
 		files = append(files, AudioFile{
 			BaseAudioFile: c,
-			Audio: media.Audio{
-				Metadata: metadata,
-				Duration: duration,
-			},
+			Metadata:      metadata,
+			Duration:      duration,
 		})
 	}
 

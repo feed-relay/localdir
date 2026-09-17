@@ -2,16 +2,17 @@ package fs
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/dhowden/tag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/feed-relay/localdir/internal/media"
 	mediaMocks "github.com/feed-relay/localdir/internal/media/mocks"
 )
 
@@ -31,8 +32,8 @@ func TestFinder_RecentAudioFiles_ReturnsNewestFilesFirst(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{"newest.mp3", "middle.m4a", "oldest.mp3"}, baseNames(files))
-	assert.Len(t, metadataReader.ReadCalls(), 3)
-	assert.Len(t, durationReader.ReadCalls(), 3)
+	assert.Len(t, metadataReader.MetadataCalls(), 3)
+	assert.Len(t, durationReader.DurationCalls(), 3)
 }
 
 func TestFinder_RecentAudioFiles_AppliesLimit(t *testing.T) {
@@ -70,7 +71,7 @@ func TestFinder_RecentAudioFiles_PopulatesEveryField(t *testing.T) {
 
 	writeFile(t, dir, "episode.m4a", modTime, size)
 
-	finder, _, _ := newFinder(t, map[string]int64{"episode.m4a": 4242})
+	finder, _, _ := newFinder(t, map[string]time.Duration{"episode.m4a": 4242 * time.Second})
 
 	files, err := finder.RecentAudioFiles(dir, 1)
 
@@ -83,11 +84,8 @@ func TestFinder_RecentAudioFiles_PopulatesEveryField(t *testing.T) {
 	assert.Equal(t, "episode.m4a", file.Name)
 	assert.Equal(t, int64(size), file.Length)
 	assert.Equal(t, M4a, file.AudioType)
-	assert.Equal(t, int64(4242), file.Duration)
+	assert.Equal(t, 4242*time.Second, file.Duration)
 	assert.WithinDuration(t, modTime, file.ModTime, time.Second)
-	// If Metadata carries fields (title, artist, ...), return a distinct value
-	// from the mock above and assert it here instead of the zero value.
-	assert.Equal(t, &mediaMocks.AudioMetadataMock{}, file.Metadata)
 }
 
 func TestFinder_RecentAudioFiles_DetectsBothAudioTypes(t *testing.T) {
@@ -125,8 +123,8 @@ func TestFinder_RecentAudioFiles_SkipsNonAudioEntries(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{"episode.mp3"}, baseNames(files))
-	assert.Len(t, metadataReader.ReadCalls(), 1, "readers must not be called for skipped entries")
-	assert.Len(t, durationReader.ReadCalls(), 1)
+	assert.Len(t, metadataReader.MetadataCalls(), 1, "readers must not be called for skipped entries")
+	assert.Len(t, durationReader.DurationCalls(), 1)
 }
 
 func TestFinder_RecentAudioFiles_DoesNotTraverseSubdirectories(t *testing.T) {
@@ -153,11 +151,11 @@ func TestFinder_RecentAudioFiles_SkipsFileWhenMetadataReadFails(t *testing.T) {
 	finder, _, durationReader := newFinder(t, nil)
 	finder = NewFinder(
 		&mediaMocks.MetadataReaderMock{
-			ReadFunc: func(path string) (media.AudioMetadata, error) {
+			MetadataFunc: func(path string) (tag.Metadata, error) {
 				if filepath.Base(path) == "broken.mp3" {
-					return &mediaMocks.AudioMetadataMock{}, errReaderFailed
+					return nil, errReaderFailed
 				}
-				return &mediaMocks.AudioMetadataMock{}, nil
+				return nil, nil
 			},
 		},
 		durationReader,
@@ -167,7 +165,7 @@ func TestFinder_RecentAudioFiles_SkipsFileWhenMetadataReadFails(t *testing.T) {
 
 	require.NoError(t, err, "a failing file must not fail the whole call")
 	assert.Equal(t, []string{"good.mp3"}, baseNames(files))
-	assert.Len(t, durationReader.ReadCalls(), 1, "duration must not be read after metadata failed")
+	assert.Len(t, durationReader.DurationCalls(), 1, "duration must not be read after metadata failed")
 }
 
 func TestFinder_RecentAudioFiles_SkipsFileWhenDurationReadFails(t *testing.T) {
@@ -179,14 +177,14 @@ func TestFinder_RecentAudioFiles_SkipsFileWhenDurationReadFails(t *testing.T) {
 
 	finder := NewFinder(
 		&mediaMocks.MetadataReaderMock{
-			ReadFunc: func(path string) (media.AudioMetadata, error) { return &mediaMocks.AudioMetadataMock{}, nil },
+			MetadataFunc: func(path string) (tag.Metadata, error) { return nil, nil },
 		},
 		&mediaMocks.DurationReaderMock{
-			ReadFunc: func(path string) (int64, error) {
+			DurationFunc: func(ctx context.Context, path string) (time.Duration, error) {
 				if filepath.Base(path) == "broken.mp3" {
 					return 0, errReaderFailed
 				}
-				return 1, nil
+				return time.Second, nil
 			},
 		},
 	)
@@ -218,8 +216,8 @@ func TestFinder_RecentAudioFiles_NonPositiveLimit(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, files, "documented to return an empty slice, not nil")
 			assert.Empty(t, files)
-			assert.Empty(t, metadataReader.ReadCalls())
-			assert.Empty(t, durationReader.ReadCalls())
+			assert.Empty(t, metadataReader.MetadataCalls())
+			assert.Empty(t, durationReader.DurationCalls())
 		})
 	}
 }
@@ -232,7 +230,7 @@ func TestFinder_RecentAudioFiles_EmptyDir(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, files)
 	assert.Empty(t, files)
-	assert.Empty(t, metadataReader.ReadCalls())
+	assert.Empty(t, metadataReader.MetadataCalls())
 }
 
 func TestFinder_RecentAudioFiles_EmptyDirectory(t *testing.T) {
@@ -291,13 +289,13 @@ func TestFinder_RecentAudioFiles_PassesAbsolutePathsToReaders(t *testing.T) {
 	var metadataPaths, durationPaths []string
 	finder := NewFinder(
 		&mediaMocks.MetadataReaderMock{
-			ReadFunc: func(path string) (media.AudioMetadata, error) {
+			MetadataFunc: func(path string) (tag.Metadata, error) {
 				metadataPaths = append(metadataPaths, path)
-				return &mediaMocks.AudioMetadataMock{}, nil
+				return nil, nil
 			},
 		},
 		&mediaMocks.DurationReaderMock{
-			ReadFunc: func(path string) (int64, error) {
+			DurationFunc: func(ctx context.Context, path string) (time.Duration, error) {
 				durationPaths = append(durationPaths, path)
 				return 0, nil
 			},
@@ -318,17 +316,17 @@ func TestFinder_RecentAudioFiles_KeepsDurationPerFile(t *testing.T) {
 	writeFile(t, dir, "first.mp3", now.Add(-time.Minute), 10)
 	writeFile(t, dir, "second.mp3", now.Add(-2*time.Minute), 10)
 
-	finder, _, _ := newFinder(t, map[string]int64{
-		"first.mp3":  111,
-		"second.mp3": 222,
+	finder, _, _ := newFinder(t, map[string]time.Duration{
+		"first.mp3":  111 * time.Second,
+		"second.mp3": 222 * time.Second,
 	})
 
 	files, err := finder.RecentAudioFiles(dir, 10)
 
 	require.NoError(t, err)
 	require.Len(t, files, 2)
-	assert.Equal(t, int64(111), files[0].Duration)
-	assert.Equal(t, int64(222), files[1].Duration)
+	assert.Equal(t, 111*time.Second, files[0].Duration)
+	assert.Equal(t, 222*time.Second, files[1].Duration)
 }
 
 // TestFinder_RecentAudioFiles_UppercaseExtension documents a gap rather than
@@ -351,16 +349,16 @@ func TestFinder_RecentAudioFiles_UppercaseExtension(t *testing.T) {
 
 // newFinder builds a Finder with happy-path mocks. durations maps a file base
 // name to the duration the DurationReader should return for it.
-func newFinder(t *testing.T, durations map[string]int64) (*Finder, *mediaMocks.MetadataReaderMock, *mediaMocks.DurationReaderMock) {
+func newFinder(t *testing.T, durations map[string]time.Duration) (*Finder, *mediaMocks.MetadataReaderMock, *mediaMocks.DurationReaderMock) {
 	t.Helper()
 
 	metadataReader := &mediaMocks.MetadataReaderMock{
-		ReadFunc: func(path string) (media.AudioMetadata, error) {
-			return &mediaMocks.AudioMetadataMock{}, nil
+		MetadataFunc: func(path string) (tag.Metadata, error) {
+			return nil, nil
 		},
 	}
 	durationReader := &mediaMocks.DurationReaderMock{
-		ReadFunc: func(path string) (int64, error) {
+		DurationFunc: func(ctx context.Context, path string) (time.Duration, error) {
 			return durations[filepath.Base(path)], nil
 		},
 	}

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/feed-relay/localdir/internal/media"
+	"github.com/dhowden/tag"
 )
 
 type AudioType string
@@ -24,8 +24,10 @@ type BaseAudioFile struct {
 }
 
 type AudioFile struct {
-	media.Audio
 	BaseAudioFile
+
+	Metadata tag.Metadata
+	Duration time.Duration
 }
 
 func AudioTypeByName(name string) (AudioType, bool) {
