@@ -16,6 +16,7 @@ const (
 )
 
 type BaseAudioFile struct {
+	Name      string
 	Path      string
 	ModTime   time.Time
 	Length    int64

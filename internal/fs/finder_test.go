@@ -80,6 +80,7 @@ func TestFinder_RecentAudioFiles_PopulatesEveryField(t *testing.T) {
 	file := files[0]
 	assert.True(t, filepath.IsAbs(file.Path), "path must be absolute")
 	assert.Equal(t, filepath.Join(dir, "episode.m4a"), file.Path)
+	assert.Equal(t, "episode.m4a", file.Name)
 	assert.Equal(t, int64(size), file.Length)
 	assert.Equal(t, M4a, file.AudioType)
 	assert.Equal(t, int64(4242), file.Duration)
@@ -279,6 +280,7 @@ func TestFinder_RecentAudioFiles_ResolvesRelativeDir(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, files, 1)
+	assert.Equal(t, "episode.mp3", files[0].Name)
 	assert.Equal(t, filepath.Join(dir, "episode.mp3"), files[0].Path)
 }
 
@@ -380,7 +382,7 @@ func writeFile(t *testing.T, dir, name string, modTime time.Time, size int) stri
 func baseNames(files []AudioFile) []string {
 	names := make([]string, 0, len(files))
 	for _, file := range files {
-		names = append(names, filepath.Base(file.Path))
+		names = append(names, file.Name)
 	}
 
 	return names

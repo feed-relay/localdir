@@ -72,6 +72,7 @@ func (f *Finder) RecentAudioFiles(dir string, limit int) ([]AudioFile, error) {
 		}
 
 		candidates = append(candidates, BaseAudioFile{
+			Name:      entry.Name(),
 			Path:      filepath.Join(absDir, entry.Name()),
 			ModTime:   info.ModTime(),
 			Length:    info.Size(),
@@ -108,12 +109,7 @@ func (f *Finder) RecentAudioFiles(dir string, limit int) ([]AudioFile, error) {
 		}
 
 		files = append(files, AudioFile{
-			BaseAudioFile: BaseAudioFile{
-				Path:      c.Path,
-				ModTime:   c.ModTime,
-				Length:    c.Length,
-				AudioType: c.AudioType,
-			},
+			BaseAudioFile: c,
 			Audio: media.Audio{
 				Metadata: metadata,
 				Duration: duration,
