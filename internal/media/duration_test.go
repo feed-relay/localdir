@@ -141,7 +141,6 @@ func TestFFProbeDurationReader_Duration_Testdata(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.InDelta(t, 3*time.Second, got, float64(100*time.Millisecond))
-	//TODO assert.Equal(t, 3030204*time.Microsecond, got)
-	//TODO assert.Equal(t, int64(3), int64(got.Seconds()))
+	//assert.InDelta(t, 3*time.Second, got, float64(100*time.Millisecond))
+	assert.Equal(t, int64(3), int64(got.Seconds()))
 }
