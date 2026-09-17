@@ -1,4 +1,4 @@
-package fs
+package media
 
 import (
 	"log/slog"
@@ -7,11 +7,17 @@ import (
 	"github.com/hajimehoshi/go-mp3"
 )
 
+//go:generate moq --out ./mocks/durationreader_mock.go --pkg mocks --skip-ensure --with-resets -fmt goimports . DurationReader
+
 type DurationReader interface {
 	Read(path string) (int64, error)
 }
 
 type durReader struct{}
+
+func NewDurationReader() DurationReader {
+	return &durReader{}
+}
 
 func (*durReader) Read(path string) (int64, error) {
 	f, err := os.Open(path)

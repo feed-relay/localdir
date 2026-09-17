@@ -8,17 +8,16 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+
+	"github.com/feed-relay/localdir/internal/media"
 )
 
-//go:generate moq --out ./mocks/metadatareader_mock.go --pkg mocks --skip-ensure --with-resets -fmt goimports . MetadataReader
-//go:generate moq --out ./mocks/durationreader_mock.go --pkg mocks --skip-ensure --with-resets -fmt goimports . DurationReader
-
 type Finder struct {
-	metadataReader MetadataReader
-	durationReader DurationReader
+	metadataReader media.MetadataReader
+	durationReader media.DurationReader
 }
 
-func NewFinder(metadataReader MetadataReader, durationReader DurationReader) *Finder {
+func NewFinder(metadataReader media.MetadataReader, durationReader media.DurationReader) *Finder {
 	return &Finder{
 		metadataReader: metadataReader,
 		durationReader: durationReader,
@@ -49,13 +48,13 @@ func (f *Finder) RecentAudioFiles(dir string, limit int) ([]AudioFile, error) {
 		return nil, fmt.Errorf("read dir %q: %w", absDir, err)
 	}
 
-	candidates := make([]AudioFileBase, 0, len(entries))
+	candidates := make([]BaseAudioFile, 0, len(entries))
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
 		}
 
-		atype, ok := audioType(entry.Name())
+		atype, ok := AudioTypeByName(entry.Name())
 		if !ok {
 			continue
 		}
@@ -72,20 +71,20 @@ func (f *Finder) RecentAudioFiles(dir string, limit int) ([]AudioFile, error) {
 			continue
 		}
 
-		candidates = append(candidates, AudioFileBase{
-			path:      filepath.Join(absDir, entry.Name()),
-			modTime:   info.ModTime(),
-			length:    info.Size(),
-			audioType: atype,
+		candidates = append(candidates, BaseAudioFile{
+			Path:      filepath.Join(absDir, entry.Name()),
+			ModTime:   info.ModTime(),
+			Length:    info.Size(),
+			AudioType: atype,
 		})
 	}
 
-	slices.SortStableFunc(candidates, func(a, b AudioFileBase) int {
-		if c := b.modTime.Compare(a.modTime); c != 0 { // newest first
+	slices.SortStableFunc(candidates, func(a, b BaseAudioFile) int {
+		if c := b.ModTime.Compare(a.ModTime); c != 0 { // newest first
 			return c
 		}
 
-		return cmp.Compare(a.path, b.path)
+		return cmp.Compare(a.Path, b.Path)
 	})
 
 	files := make([]AudioFile, 0, min(limit, len(candidates)))
@@ -96,27 +95,29 @@ func (f *Finder) RecentAudioFiles(dir string, limit int) ([]AudioFile, error) {
 
 		// Probing happens only for the files that can still make the cut,
 		// instead of for every file in the directory.
-		metadata, err := f.metadataReader.Read(c.path)
+		metadata, err := f.metadataReader.Read(c.Path)
 		if err != nil {
-			slog.Error("fs: read metadata", slog.String("path", c.path), slog.Any("err", err))
+			slog.Error("fs: read metadata", slog.String("path", c.Path), slog.Any("err", err))
 			continue
 		}
 
-		duration, err := f.durationReader.Read(c.path)
+		duration, err := f.durationReader.Read(c.Path)
 		if err != nil {
-			slog.Error("fs: read duration", slog.String("path", c.path), slog.Any("err", err))
+			slog.Error("fs: read duration", slog.String("path", c.Path), slog.Any("err", err))
 			continue
 		}
 
 		files = append(files, AudioFile{
-			AudioFileBase: AudioFileBase{
-				path:      c.path,
-				modTime:   c.modTime,
-				length:    c.length,
-				audioType: c.audioType,
+			BaseAudioFile: BaseAudioFile{
+				Path:      c.Path,
+				ModTime:   c.ModTime,
+				Length:    c.Length,
+				AudioType: c.AudioType,
 			},
-			metadata: metadata,
-			duration: duration,
+			Audio: media.Audio{
+				Metadata: metadata,
+				Duration: duration,
+			},
 		})
 	}
 

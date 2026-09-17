@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/feed-relay/localdir/internal/media"
 )
 
 type AudioType string
@@ -13,44 +15,19 @@ const (
 	Mp3 AudioType = "mp3"
 )
 
-type AudioFileBase struct {
-	path      string
-	modTime   time.Time
-	length    int64
-	audioType AudioType
+type BaseAudioFile struct {
+	Path      string
+	ModTime   time.Time
+	Length    int64
+	AudioType AudioType
 }
 
 type AudioFile struct {
-	AudioFileBase
-	metadata Metadata
-	duration int64
+	media.Audio
+	BaseAudioFile
 }
 
-func (f *AudioFile) Path() string {
-	return f.path
-}
-
-func (f *AudioFile) ModTime() time.Time {
-	return f.modTime
-}
-
-func (f *AudioFile) Length() int64 {
-	return f.length
-}
-
-func (f *AudioFile) AudioType() AudioType {
-	return f.audioType
-}
-
-func (f *AudioFile) Metadata() Metadata {
-	return f.metadata
-}
-
-func (f *AudioFile) Duration() int64 {
-	return f.duration
-}
-
-func audioType(name string) (AudioType, bool) {
+func AudioTypeByName(name string) (AudioType, bool) {
 	switch strings.ToLower(filepath.Ext(name)) {
 	case ".mp3":
 		return Mp3, true
