@@ -25,10 +25,10 @@ type Provider struct {
 	adapter Adapter
 }
 
-func NewProvider(fileProvider *fs.Finder) *Provider {
+func NewProvider(config Config, finder *fs.Finder) *Provider {
 	return &Provider{
-		finder:  fileProvider,
-		adapter: &adapter{},
+		finder:  finder,
+		adapter: &adapter{config: config},
 	}
 }
 
@@ -38,7 +38,7 @@ type Feed interface {
 
 	Dir() string
 	AudioFiles() []fs.AudioFile
-	WithFileProvider(finder *fs.Finder) Feed
+	SetFinder(finder *fs.Finder)
 }
 
 // feedTask is one feed to be processed by a worker; all of its
@@ -60,7 +60,8 @@ func (p *Provider) Feeds(ctx context.Context, feeds []contracts.Feed) (map[strin
 			continue
 		}
 
-		if len(pf.WithFileProvider(p.finder).Shows()) == 0 {
+		pf.SetFinder(p.finder)
+		if len(pf.Shows()) == 0 {
 			continue
 		}
 		ff = append(ff, pf)

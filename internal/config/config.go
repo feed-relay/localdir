@@ -1,93 +1,29 @@
 package config
 
-import (
-	"log/slog"
-
-	"github.com/meesooqa/go-lgr"
-
-	"github.com/feed-relay/localdir/internal/fs"
-)
+import "github.com/meesooqa/go-lgr"
 
 type AppConfig struct {
 	Logger lgr.Config `yaml:"logger"`
 	Feeds  []Feed     `yaml:"feeds"`
+
+	RawOutputDir        string `yaml:"output_dir"`
+	RawGenerator        string `yaml:"generator"`
+	RawItunesOwnerName  string `yaml:"itunes_owner_name"`
+	RawItunesOwnerEmail string `yaml:"itunes_owner_email"`
 }
 
-type Feed struct {
-	RawSlug        string `yaml:"slug"`
-	RawTitle       string `yaml:"title"`
-	RawDescription string `yaml:"description"`
-	RawLink        string `yaml:"link"`
-	RawImage       string `yaml:"image"`
-	RawLimit       int    `yaml:"limit"`
-	RawDir         string `yaml:"dir"`
-
-	shows      []string
-	finder     *fs.Finder
-	audioFiles []fs.AudioFile
+func (c *AppConfig) OutputDir() string {
+	return c.RawOutputDir
 }
 
-func (f *Feed) Limit() int {
-	return f.RawLimit
+func (c *AppConfig) Generator() string {
+	return c.RawGenerator
 }
 
-func (f *Feed) Link() string {
-	return f.RawLink
+func (c *AppConfig) ItunesOwnerName() string {
+	return c.RawItunesOwnerName
 }
 
-func (f *Feed) Slug() string {
-	return f.RawSlug
-}
-
-func (f *Feed) Title() string {
-	return f.RawTitle
-}
-
-func (f *Feed) Description() string {
-	return f.RawDescription
-}
-
-func (f *Feed) Image() string {
-	return f.RawImage
-}
-
-func (f *Feed) Shows() []string {
-	if f.shows == nil {
-		err := f.loadAudioFiles()
-		if err != nil {
-			slog.Error("loadAudioFiles", slog.Any("error", err))
-			return nil
-		}
-
-		shows := make([]string, len(f.audioFiles))
-		for i, audioFile := range f.audioFiles {
-			shows[i] = audioFile.Path
-		}
-		f.shows = shows
-	}
-	return f.shows
-}
-
-func (f *Feed) Dir() string {
-	return f.RawDir
-}
-
-func (f *Feed) AudioFiles() []fs.AudioFile {
-	return f.audioFiles
-}
-
-func (f *Feed) WithFileProvider(fileProvider *fs.Finder) *Feed {
-	f.finder = fileProvider
-	return f
-}
-
-func (f *Feed) loadAudioFiles() error {
-	if f.audioFiles == nil && f.finder != nil {
-		files, err := f.finder.RecentAudioFiles(f.Dir(), f.Limit())
-		if err != nil {
-			return err
-		}
-		f.audioFiles = files
-	}
-	return nil
+func (c *AppConfig) ItunesOwnerEmail() string {
+	return c.RawItunesOwnerEmail
 }
