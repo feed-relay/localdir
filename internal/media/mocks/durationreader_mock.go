@@ -4,7 +4,9 @@
 package mocks
 
 import (
+	"context"
 	"sync"
+	"time"
 )
 
 // DurationReaderMock is a mock implementation of media.DurationReader.
@@ -13,8 +15,8 @@ import (
 //
 //		// make and configure a mocked media.DurationReader
 //		mockedDurationReader := &DurationReaderMock{
-//			ReadFunc: func(path string) (int64, error) {
-//				panic("mock out the Read method")
+//			DurationFunc: func(ctx context.Context, path string) (time.Duration, error) {
+//				panic("mock out the Duration method")
 //			},
 //		}
 //
@@ -23,62 +25,68 @@ import (
 //
 //	}
 type DurationReaderMock struct {
-	// ReadFunc mocks the Read method.
-	ReadFunc func(path string) (int64, error)
+	// DurationFunc mocks the Duration method.
+	DurationFunc func(ctx context.Context, path string) (time.Duration, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// Read holds details about calls to the Read method.
-		Read []struct {
+		// Duration holds details about calls to the Duration method.
+		Duration []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 			// Path is the path argument value.
 			Path string
 		}
 	}
-	lockRead sync.RWMutex
+	lockDuration sync.RWMutex
 }
 
-// Read calls ReadFunc.
-func (mock *DurationReaderMock) Read(path string) (int64, error) {
-	if mock.ReadFunc == nil {
-		panic("DurationReaderMock.ReadFunc: method is nil but DurationReader.Read was just called")
+// Duration calls DurationFunc.
+func (mock *DurationReaderMock) Duration(ctx context.Context, path string) (time.Duration, error) {
+	if mock.DurationFunc == nil {
+		panic("DurationReaderMock.DurationFunc: method is nil but DurationReader.Duration was just called")
 	}
 	callInfo := struct {
+		Ctx  context.Context
 		Path string
 	}{
+		Ctx:  ctx,
 		Path: path,
 	}
-	mock.lockRead.Lock()
-	mock.calls.Read = append(mock.calls.Read, callInfo)
-	mock.lockRead.Unlock()
-	return mock.ReadFunc(path)
+	mock.lockDuration.Lock()
+	mock.calls.Duration = append(mock.calls.Duration, callInfo)
+	mock.lockDuration.Unlock()
+	return mock.DurationFunc(ctx, path)
 }
 
-// ReadCalls gets all the calls that were made to Read.
+// DurationCalls gets all the calls that were made to Duration.
 // Check the length with:
 //
-//	len(mockedDurationReader.ReadCalls())
-func (mock *DurationReaderMock) ReadCalls() []struct {
+//	len(mockedDurationReader.DurationCalls())
+func (mock *DurationReaderMock) DurationCalls() []struct {
+	Ctx  context.Context
 	Path string
 } {
 	var calls []struct {
+		Ctx  context.Context
 		Path string
 	}
-	mock.lockRead.RLock()
-	calls = mock.calls.Read
-	mock.lockRead.RUnlock()
+	mock.lockDuration.RLock()
+	calls = mock.calls.Duration
+	mock.lockDuration.RUnlock()
 	return calls
 }
 
-// ResetReadCalls reset all the calls that were made to Read.
-func (mock *DurationReaderMock) ResetReadCalls() {
-	mock.lockRead.Lock()
-	mock.calls.Read = nil
-	mock.lockRead.Unlock()
+// ResetDurationCalls reset all the calls that were made to Duration.
+func (mock *DurationReaderMock) ResetDurationCalls() {
+	mock.lockDuration.Lock()
+	mock.calls.Duration = nil
+	mock.lockDuration.Unlock()
 }
 
 // ResetCalls reset all the calls that were made to all mocked methods.
 func (mock *DurationReaderMock) ResetCalls() {
-	mock.lockRead.Lock()
-	mock.calls.Read = nil
-	mock.lockRead.Unlock()
+	mock.lockDuration.Lock()
+	mock.calls.Duration = nil
+	mock.lockDuration.Unlock()
 }
