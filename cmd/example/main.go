@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"log"
 	"log/slog"
 
@@ -30,8 +30,11 @@ func main() {
 	slog.SetDefault(logger)
 
 	feeds := make([]contracts.Feed, len(conf.Feeds))
+	feedsOutputDir := make(map[string]string, len(conf.Feeds))
 	for i, feed := range conf.Feeds {
 		feeds[i] = &feed
+		fullSlug := fmt.Sprintf("%s-%s", provider.Platform, feed.Slug())
+		feedsOutputDir[fullSlug] = feed.Dir()
 	}
 
 	finder := fs.NewFinder(media.NewMetadataReader(), media.NewFfprobeDurationReader(&media.ExecCommandRunner{}))
@@ -42,11 +45,8 @@ func main() {
 	}
 
 	w := writer.NewXmlFileWriter()
-	if conf.OutputDir() == "" {
-		log.Fatal(errors.New("OutputDir is empty"))
-	}
 	for slug, feed := range rssFeeds {
-		err = w.Write(conf.OutputDir(), slug, feed)
+		err = w.Write(feedsOutputDir[slug], slug, feed)
 		if err != nil {
 			slog.Error("write", slog.Any("err", err))
 			continue
